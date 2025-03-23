@@ -1,10 +1,9 @@
 # Secure Code AI
 
-![Secure Code AI Logo](https://raw.githubusercontent.com/Kishan-Patel-dev/AI-Code-Security-Analyzer/main/assets/logo.png) 
 
 
-<imag src="asset/Result.png">
-<imag src="asset/Demo.png">
+![Atl text](asset/Demo.png "AI Code SEcurity Analyzer")
+![Atl text](asset/Result.png "AI Code SEcurity Analyzer")
 
 Secure Code AI is an advanced AI-powered code security analyzer that helps developers identify and fix security vulnerabilities in their code. The tool provides detailed analysis, recommendations, and visual reporting to improve code security.
 
@@ -143,7 +142,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 Developed by Kishan Patel
 
 - GitHub: [Kishan-Patel-dev](https://github.com/Kishan-Patel-dev/)
-- Twitter: [@KishanPatel_dev](https://x.com/KishanPatel_dev)
+- Twitter: [KishanPatel_dev](https://x.com/KishanPatel_dev)
 - LinkedIn: [kishan-patel-dev](https://www.linkedin.com/in/kishan-patel-dev/)
 
 ## Acknowledgements

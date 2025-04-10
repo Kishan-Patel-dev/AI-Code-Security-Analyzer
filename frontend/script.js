@@ -609,6 +609,73 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
+    // Handle GitHub repository scan
+    scanRepoBtn.addEventListener('click', function () {
+        const gitUrl = gitRepoInput.value.trim();
+        if (!gitUrl) {
+            alert('Please enter a GitHub repository URL.');
+            return;
+        }
+
+        // Show loading spinner
+        uploadStatus.classList.remove('d-none');
+        statusText.textContent = 'Downloading and scanning the GitHub repository...';
+
+        fetch('http://localhost:5000/api/scan-repo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ git_url: gitUrl })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to scan the GitHub repository.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                uploadStatus.classList.add('d-none');
+                displayGitHubRepoResults(data, gitUrl);
+            })
+            .catch(error => {
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <div>Error: ${error.message}</div>
+                    </div>`;
+                console.error('Error:', error);
+            });
+    });
+
+    // Display GitHub repository scan results
+    function displayGitHubRepoResults(data, repoUrl) {
+        analysisResult.classList.remove('d-none');
+
+        // Update summary
+        highCountText.textContent = data.summary.high;
+        mediumCountText.textContent = data.summary.medium;
+        lowCountText.textContent = data.summary.low;
+
+        // Update vulnerabilities list
+        vulnerabilitiesList.innerHTML = '';
+        data.comments.forEach(comment => {
+            const vulnItem = document.createElement('div');
+            vulnItem.className = `vulnerability-item list-group-item list-group-item-action ${getSeverityClass(comment.comment)}`;
+            vulnItem.innerHTML = `
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <h6 class="mb-1">
+                        <span class="severity-indicator severity-${getSeverityClass(comment.comment)}"></span>
+                        ${comment.comment}
+                    </h6>
+                    <small><i class="fas fa-file me-1"></i>${comment.file} (Line: ${comment.line})</small>
+                </div>
+            `;
+            vulnerabilitiesList.appendChild(vulnItem);
+        });
+
+        // Update chart
+        createVulnerabilityChart(data.summary.high, data.summary.medium, data.summary.low);
+    }
+
     // Display project-level results
     function displayProjectResults(data, projectName) {
         analysisResult.classList.remove('d-none');

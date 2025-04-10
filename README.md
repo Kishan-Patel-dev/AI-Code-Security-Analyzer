@@ -61,7 +61,7 @@ cd AI-Code-Security-Analyzer
 2. Set up the backend
 ```bash
 cd backend
-pip install -r requirements.txt  # You'll need to create this file with Flask and Flask-CORS
+pip install -r requirements.txt  # Install required Python dependencies
 ```
 
 3. Start the backend server
@@ -69,29 +69,45 @@ pip install -r requirements.txt  # You'll need to create this file with Flask an
 python app.py
 ```
 
-4. Open the frontend
+4. Set up the frontend
 ```bash
 cd ../frontend
+npm install  # Optional: Install dependencies if using npm for development
+```
+
+5. Start the frontend
+```bash
 # You can use any static file server to serve the frontend files
 # For example, with Python:
 python -m http.server 8000
 ```
 
-5. Open your browser and navigate to `http://localhost:8000`
+6. Open your browser and navigate to `http://localhost:8000`
 
 ## Usage
 
-1. Visit the application in your web browser
-2. Drag and drop your code file or use the "Browse Files" button
-3. Wait for the analysis to complete
-4. Review the identified vulnerabilities with their severity levels
-5. Click on any vulnerability to see detailed information, including:
+1. Visit the application in your web browser.
+2. Drag and drop your code file or use the "Browse Files" button to upload a single file.
+3. Alternatively, upload a zipped project folder using the "Scan Project" feature.
+4. You can also scan a GitHub repository by entering its URL in the "Scan Git Repository" section.
+5. Wait for the analysis to complete.
+6. Review the identified vulnerabilities with their severity levels.
+7. Click on any vulnerability to see detailed information, including:
    - Description of the vulnerability
    - The affected code snippet
    - Potential impact
    - Recommended fix
    - Reference links for further reading
-6. Use the highlighted source code view to locate the exact location of issues
+8. Use the highlighted source code view to locate the exact location of issues.
+
+## GitHub Repository Scanning
+
+Secure Code AI supports scanning GitHub repositories for vulnerabilities. Follow these steps:
+
+1. Enter the GitHub repository URL in the "Scan Git Repository" section of the application.
+2. Click the "Scan Repository" button.
+3. The application will download the repository, analyze its contents, and display the results.
+4. Review the vulnerabilities and recommendations in the results section.
 
 ## Supported Languages
 

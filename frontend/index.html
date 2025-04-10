@@ -15,11 +15,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand d-flex align-items-center" href="#">
                 <i class="fas fa-shield-alt me-2"></i>
-                Secure Code AI
+                <span>Secure Code AI</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -49,23 +49,26 @@
         </div>
     </nav>
 
-    <div class="container mt-4 mt-lg-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-9">
-                <div class="text-center mb-4 mb-lg-5">
-                    <h1 class="mb-3">LLM-Powered Code Security Analysis</h1>
-                    <p class="lead text-muted">Upload your code file to instantly analyze it for security vulnerabilities using advanced AI models and get detailed recommendations.</p>
-                </div>
-                
-                <div class="card mb-4">
-                    <div class="card-header">
+    <header class="bg-light py-5 shadow-sm">
+        <div class="container text-center">
+            <h1 class="display-5 fw-bold">AI-Powered Code Security Analysis</h1>
+            <p class="lead text-muted">Analyze your code for vulnerabilities with advanced AI models. Get actionable insights and recommendations.</p>
+        </div>
+    </header>
+
+    <main class="container my-5">
+        <div class="row g-4">
+            <!-- Upload Code Section -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
                         <h5><i class="fas fa-upload me-2"></i>Upload Your Code</h5>
                     </div>
                     <div class="card-body">
-                        <div id="upload-area" class="upload-area">
+                        <div id="upload-area" class="upload-area text-center p-4 border rounded">
                             <div class="upload-content">
-                                <div class="upload-icon">
-                                    <i class="fas fa-cloud-upload-alt"></i>
+                                <div class="upload-icon mb-3">
+                                    <i class="fas fa-cloud-upload-alt fa-3x"></i>
                                 </div>
                                 <p class="upload-text">Drag and drop your code file here</p>
                                 <p class="upload-info">or</p>
@@ -86,9 +89,12 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="card mb-4">
-                    <div class="card-header">
+            <!-- Scan Project Section -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
                         <h5><i class="fas fa-folder-open me-2"></i>Scan Project</h5>
                     </div>
                     <div class="card-body">
@@ -96,177 +102,117 @@
                             <label for="project-input" class="form-label">Upload Project Zip</label>
                             <input type="file" class="form-control" id="project-input" accept=".zip">
                         </div>
-                        <button class="btn btn-primary" id="scan-project">
+                        <button class="btn btn-primary w-100" id="scan-project">
                             <i class="fas fa-search me-1"></i>Scan Project
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5><i class="fas fa-code-branch me-2"></i>Scan Git Repository</h5>
+            <!-- Scan GitHub Repository Section -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-code-branch me-2"></i>Scan GitHub Repository</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="git-repo-input" class="form-label">Git Repository URL</label>
+                            <label for="git-repo-input" class="form-label">GitHub Repository URL</label>
                             <input type="url" class="form-control" id="git-repo-input" placeholder="https://github.com/user/repo.git">
                         </div>
-                        <button class="btn btn-primary" id="scan-repo">
+                        <button class="btn btn-primary w-100" id="scan-repo">
                             <i class="fas fa-search me-1"></i>Scan Repository
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div id="analysis-result" class="d-none">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                            <h5 class="mb-2 mb-sm-0"><i class="fas fa-chart-bar me-2"></i>LLM Analysis Summary</h5>
+        <!-- Analysis Results Section -->
+        <div id="analysis-result" class="mt-5 d-none">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>LLM Analysis Summary</h5>
+                    <button id="download-report" class="btn btn-light btn-sm">
+                        <i class="fas fa-download me-1"></i>Download Report
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="language-icon me-3" id="language-icon"></div>
+                                <div>
+                                    <p class="mb-0 fw-bold" id="detected-language">Unknown</p>
+                                    <p class="mb-0 text-muted small"><i class="fas fa-file-code me-1"></i><span id="filename"></span></p>
+                                </div>
+                            </div>
                             <div>
-                                <button id="download-report" class="btn download-report-btn">
-                                    <i class="fas fa-download me-1"></i>Download Report
+                                <p class="mb-2 fw-semibold">Vulnerability Breakdown:</p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="severity-indicator severity-high me-2"></span>
+                                    <span class="me-2">High:</span>
+                                    <span class="fw-bold" id="high-count-text">0</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="severity-indicator severity-medium me-2"></span>
+                                    <span class="me-2">Medium:</span>
+                                    <span class="fw-bold" id="medium-count-text">0</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="severity-indicator severity-low me-2"></span>
+                                    <span class="me-2">Low:</span>
+                                    <span class="fw-bold" id="low-count-text">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div style="height: 200px;">
+                                <canvas id="vulnerabilities-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-4">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-code me-2"></i>Source Code</h5>
+                            <div>
+                                <button class="btn btn-sm btn-light me-2" id="copy-code">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                                <button class="btn btn-sm btn-light" id="fix-code">
+                                    <i class="fas fa-tools me-1"></i>Fix Code
                                 </button>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <!-- Make file info and vulnerability breakdown stack on mobile -->
-                                <div class="col-md-12 col-lg-4 mb-3 mb-lg-0">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="language-icon me-3" id="language-icon"></div>
-                                        <div>
-                                            <p class="mb-0 fw-bold" id="detected-language">Unknown</p>
-                                            <p class="mb-0 text-muted small"><i class="fas fa-file-code me-1"></i><span id="filename"></span></p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <p class="mb-2 fw-semibold">Vulnerability Breakdown:</p>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <span class="severity-indicator severity-high me-2"></span>
-                                            <span class="me-2">High:</span>
-                                            <span class="fw-bold" id="high-count-text">0</span>
-                                        </div>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <span class="severity-indicator severity-medium me-2"></span>
-                                            <span class="me-2">Medium:</span>
-                                            <span class="fw-bold" id="medium-count-text">0</span>
-                                        </div>
-                                        <div class="d-flex align-items-center">
-                                            <span class="severity-indicator severity-low me-2"></span>
-                                            <span class="me-2">Low:</span>
-                                            <span class="fw-bold" id="low-count-text">0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 col-lg-8">
-                                    <div style="height: 170px;">
-                                        <canvas id="vulnerabilities-chart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="card-body p-0">
+                            <pre><code id="source-code" class="p-3"></code></pre>
                         </div>
                     </div>
-
-                    <div class="row g-3">
-                        <!-- Stack content on mobile, side-by-side on larger screens -->
-                        <div class="col-lg-6 order-2 order-lg-1">
-                            <div class="card mb-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5><i class="fas fa-code me-2"></i>Source Code</h5>
-                                    <div>
-                                        <button class="btn btn-sm btn-outline-secondary me-2" id="copy-code">
-                                            <i class="fas fa-copy me-1"></i>Copy
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-success" id="fix-code">
-                                            <i class="fas fa-tools me-1"></i>Fix Code
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body p-0">
-                                    <pre><code id="source-code" class="p-3"></code></pre>
-                                </div>
-                            </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-bug me-2"></i>Vulnerabilities</h5>
                         </div>
-                        <div class="col-lg-6 order-1 order-lg-2">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5><i class="fas fa-bug me-2"></i>Vulnerabilities</h5>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div id="vulnerabilities-list" class="list-group list-group-flush">
-                                        <!-- Vulnerabilities will be added here -->
-                                    </div>
-                                </div>
+                        <div class="card-body p-0">
+                            <div id="vulnerabilities-list" class="list-group list-group-flush">
+                                <!-- Vulnerabilities will be added here -->
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Vulnerability Details Modal -->
-    <div class="modal fade" id="vulnerabilityModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modal-title">Vulnerability Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="modal-content"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fixed Code Modal -->
-    <div class="modal fade" id="fixedCodeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Fixed Code</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="fixed-code-content"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer class="mt-4 mt-lg-5">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <h5><i class="fas fa-shield-alt me-2"></i>Secure Code AI</h5>
-                    <p>An advanced AI-powered code security analyzer that helps developers identify and fix security vulnerabilities in their code.</p>
-                </div>
-                <div class="col-6 col-md-3">
-                    <h6>Links</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Home</a></li>
-                        <li><a href="#">Documentation</a></li>
-                        <li><a href="#">About</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="col-6 col-md-3">
-                    <h6>Connect</h6>
-                    <div class="d-flex gap-3 fs-4">
-                        <a href="https://github.com/Kishan-Patel-dev/"><i class="fab fa-github"></i></a>
-                        <a href="https://x.com/KishanPatel_dev"><i class="fab fa-twitter"></i></a>
-                        <a href="https://www.linkedin.com/in/kishan-patel-dev/"><i class="fab fa-linkedin"></i></a>
-                    </div>
-                </div>
-            </div>
-            <hr>
-            <p class="text-center mb-0">Develop by Kishan Patel. All rights reserved.</p>
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">Developed by Kishan Patel. All rights reserved.</p>
         </div>
     </footer>
 

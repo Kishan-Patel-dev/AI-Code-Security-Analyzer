@@ -718,6 +718,64 @@ def clone_and_scan_repo(git_url: str, language: str) -> Dict:
     finally:
         shutil.rmtree(temp_dir)
 
+def scan_github_repo(repo_url: str, language: str) -> Dict:
+    """
+    Downloads a GitHub repository as a ZIP archive, extracts its contents, and scans for vulnerabilities.
+
+    Parameters:
+    - repo_url (str): The GitHub repository URL (e.g., https://github.com/user/repo).
+    - language (str): Programming language of the repository.
+
+    Returns:
+    - Dict: Summary of vulnerabilities and formatted comments for GitHub PR review.
+    """
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Parse the repository URL
+        if not repo_url.endswith(".zip"):
+            repo_url = repo_url.rstrip("/") + "/archive/refs/heads/main.zip"
+
+        # Download the ZIP archive
+        response = requests.get(repo_url, stream=True)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download repository: {response.status_code} - {response.text}")
+
+        zip_path = os.path.join(temp_dir, "repo.zip")
+        with open(zip_path, "wb") as zip_file:
+            for chunk in response.iter_content(chunk_size=8192):
+                zip_file.write(chunk)
+
+        # Extract the ZIP archive
+        extract_dir = os.path.join(temp_dir, "repo")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+        # Recursively scan all supported code files
+        files = extract_and_list_files(extract_dir)
+        vulnerabilities_by_file = {}
+        summary = {"high": 0, "medium": 0, "low": 0}
+        comments = []
+
+        for file_path in files:
+            result = analyze_code(file_path, language)
+            vulnerabilities_by_file[file_path] = result["vulnerabilities"]
+
+            # Update summary and format comments
+            for vuln in result["vulnerabilities"]:
+                summary[vuln["severity"].lower()] += 1
+                comments.append({
+                    "file": os.path.relpath(file_path, extract_dir),
+                    "line": vuln["line_number"],
+                    "comment": f"⚠️ {vuln['name']} detected. {vuln['description']} Severity: {vuln['severity']}. Recommendation: {vuln['recommendation']}"
+                })
+
+        return {
+            "summary": summary,
+            "comments": comments
+        }
+    finally:
+        shutil.rmtree(temp_dir)
+
 # API Routes
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -789,6 +847,26 @@ def get_summary():
         'low': sum(1 for v in result['vulnerabilities'] if v['severity'] == 'low')
     }
     return jsonify(summary)
+
+@app.route('/api/scan-repo', methods=['POST'])
+def scan_repo():
+    """
+    Endpoint to scan a Git repository for vulnerabilities.
+    Expects a JSON payload with the Git repository URL.
+    """
+    data = request.get_json()
+    if not data or 'git_url' not in data:
+        return jsonify({'error': 'Git repository URL is required'}), 400
+
+    git_url = data['git_url']
+    language = data.get('language', 'Unknown')  # Optional: Default to 'Unknown'
+
+    try:
+        # Clone and scan the repository
+        result = clone_and_scan_repo(git_url, language)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

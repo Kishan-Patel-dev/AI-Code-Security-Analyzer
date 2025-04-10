@@ -19,6 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('theme-toggle');
     const codeTheme = document.getElementById('code-theme');
     const copyCodeBtn = document.getElementById('copy-code');
+    const fixCodeBtn = document.getElementById('fix-code');
+    const fixedCodeModal = new bootstrap.Modal(document.getElementById('fixedCodeModal'));
+    const fixedCodeContent = document.getElementById('fixed-code-content');
+
+    // DOM Elements for project scan
+    const projectInput = document.getElementById('project-input');
+    const scanProjectBtn = document.getElementById('scan-project');
+    const gitRepoInput = document.getElementById('git-repo-input');
+    const scanRepoBtn = document.getElementById('scan-repo');
 
     // Language icons mapping
     const languageIcons = {
@@ -100,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleFile(file) {
         // Show upload status
         uploadStatus.classList.remove('d-none');
-        statusText.textContent = 'Analyzing your code...';
+        statusText.textContent = 'Analyzing your code with LLM...';
         
         // Create FormData
         const formData = new FormData();
@@ -145,6 +154,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set file info
         detectedLanguage.textContent = data.language;
         filename.textContent = fileName;
+
+        // Add LLM-powered note
+        const llmNote = document.createElement('p');
+        llmNote.className = 'text-muted small mt-2';
+        llmNote.textContent = 'Analysis powered by advanced LLM models.';
+        document.querySelector('.card-header').appendChild(llmNote);
         
         // Set language icon
         if (languageIcons[data.language]) {
@@ -448,4 +463,182 @@ document.addEventListener('DOMContentLoaded', function() {
             createVulnerabilityChart(highCount, mediumCount, lowCount);
         }
     });
+
+    // Add download report functionality
+    document.getElementById('download-report').addEventListener('click', function () {
+        const reportData = {
+            language: detectedLanguage.textContent,
+            filename: filename.textContent,
+            vulnerabilities: Array.from(vulnerabilitiesList.children).map(item => ({
+                name: item.querySelector('h6').textContent.trim(),
+                severity: item.classList.contains('high') ? 'high' : item.classList.contains('medium') ? 'medium' : 'low',
+                description: item.querySelector('p').textContent.trim()
+            }))
+        };
+
+        const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename.textContent.split('.')[0]}_report.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Add event listener for the "Fix Code" button
+    fixCodeBtn.addEventListener('click', function () {
+        const fileName = filename.textContent;
+        const language = detectedLanguage.textContent;
+
+        // Show loading spinner in the modal
+        fixedCodeContent.innerHTML = `
+            <div class="text-center my-5">
+                <div class="loading-spinner mb-3">
+                    <div></div><div></div><div></div><div></div>
+                </div>
+                <p>Generating fixed code...</p>
+            </div>
+        `;
+        fixedCodeModal.show();
+
+        // Fetch fixed code from the backend
+        fetch('http://localhost:5000/api/fix-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code: sourceCode.textContent,
+                language: language
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to generate fixed code');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Display the fixed code
+                fixedCodeContent.innerHTML = `
+                    <pre><code class="language-${getLanguageClass(language)}">${escapeHtml(data.fixed_code)}</code></pre>
+                `;
+                hljs.highlightElement(fixedCodeContent.querySelector('code'));
+            })
+            .catch(error => {
+                fixedCodeContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i> ${error.message}
+                    </div>
+                `;
+                console.error('Error:', error);
+            });
+    });
+
+    // Handle project zip upload and scan
+    scanProjectBtn.addEventListener('click', function () {
+        if (!projectInput.files.length) {
+            alert('Please select a project zip file to scan.');
+            return;
+        }
+
+        const file = projectInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Show loading spinner
+        uploadStatus.classList.remove('d-none');
+        statusText.textContent = 'Scanning your project for vulnerabilities...';
+
+        fetch('http://localhost:5000/api/scan-project', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to scan the project.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                uploadStatus.classList.add('d-none');
+                displayProjectResults(data, file.name);
+            })
+            .catch(error => {
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <div>Error: ${error.message}</div>
+                    </div>`;
+                console.error('Error:', error);
+            });
+    });
+
+    // Handle Git repository scan
+    scanRepoBtn.addEventListener('click', function () {
+        const gitUrl = gitRepoInput.value.trim();
+        if (!gitUrl) {
+            alert('Please enter a Git repository URL.');
+            return;
+        }
+
+        // Show loading spinner
+        uploadStatus.classList.remove('d-none');
+        statusText.textContent = 'Cloning and scanning the Git repository...';
+
+        fetch('http://localhost:5000/api/scan-repo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ git_url: gitUrl })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to scan the Git repository.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                uploadStatus.classList.add('d-none');
+                displayProjectResults(data, gitUrl);
+            })
+            .catch(error => {
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <div>Error: ${error.message}</div>
+                    </div>`;
+                console.error('Error:', error);
+            });
+    });
+
+    // Display project-level results
+    function displayProjectResults(data, projectName) {
+        analysisResult.classList.remove('d-none');
+
+        // Update summary
+        highCountText.textContent = data.summary.high;
+        mediumCountText.textContent = data.summary.medium;
+        lowCountText.textContent = data.summary.low;
+
+        // Update vulnerabilities list
+        vulnerabilitiesList.innerHTML = '';
+        Object.entries(data.by_file).forEach(([filePath, vulnerabilities]) => {
+            vulnerabilities.forEach(vuln => {
+                const vulnItem = document.createElement('div');
+                vulnItem.className = `vulnerability-item list-group-item list-group-item-action ${vuln.severity}`;
+                vulnItem.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <h6 class="mb-1">
+                            <span class="severity-indicator severity-${vuln.severity}"></span>
+                            ${vuln.name}
+                        </h6>
+                        <small><i class="fas fa-file me-1"></i>${filePath} (Line: ${vuln.line})</small>
+                    </div>
+                    <p class="mb-1 text-truncate">${vuln.description}</p>
+                `;
+                vulnerabilitiesList.appendChild(vulnItem);
+            });
+        });
+
+        // Update chart
+        createVulnerabilityChart(data.summary.high, data.summary.medium, data.summary.low);
+    }
 });

@@ -2,9 +2,15 @@ import os
 import re
 import json
 import uuid
+import requests  # Assuming the LLM API requires HTTP requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import zipfile
+import tempfile
+import shutil
+from typing import List, Dict
+import subprocess
 
 app = Flask(__name__)
 CORS(app)
@@ -38,16 +44,87 @@ def identify_language(filename):
     
     return language_map.get(extension, 'Unknown')
 
+def analyze_with_llm(code: str, language: str):
+    """
+    Uses an LLM to analyze the provided code for vulnerabilities.
+    """
+    # LLM API configuration
+    LLM_API_OPTIONS = {
+        "openai": {
+            "url": "https://api.openai.com/v1/completions",
+            "key": "your-openai-api-key-here",
+            "model": "gpt-4"
+        },
+        "anthropic": {
+            "url": "https://api.anthropic.com/v1/complete",
+            "key": "your-anthropic-api-key-here",
+            "model": "claude-v1"
+        },
+        "huggingface": {
+            "url": "https://api-inference.huggingface.co/models/your-model-name",
+            "key": "your-huggingface-api-key-here"
+        }
+    }
+
+    # Select the desired LLM provider
+    selected_provider = "openai"  # Change this to "anthropic" or "huggingface" as needed
+    config = LLM_API_OPTIONS[selected_provider]
+
+    # Construct the prompt for the LLM
+    prompt = f"""
+    Analyze the following {language} code for security vulnerabilities. Identify the type of vulnerability, the line number (if possible), a description, severity (Low, Medium, High), and a recommendation to fix it.
+
+    Code:
+    {code}
+
+    Provide the output as a JSON array with the following fields:
+    - line: Line number where the vulnerability occurs (if extractable)
+    - description: Explanation of the issue
+    - severity: One of ['Low', 'Medium', 'High']
+    - recommendation: Suggested fix or mitigation
+    - vuln_type: Type of vulnerability (e.g., 'SQL Injection')
+    """
+
+    # Mocked response for demonstration purposes
+    mocked_response = [
+        {
+            "line": 2,
+            "description": "Unvalidated input passed to os.system, allowing command injection.",
+            "severity": "High",
+            "recommendation": "Use subprocess with input sanitization instead of os.system.",
+            "vuln_type": "Command Injection"
+        }
+    ]
+
+    # Uncomment the following lines to use the actual LLM API
+    # headers = {
+    #     "Authorization": f"Bearer {config['key']}",
+    #     "Content-Type": "application/json"
+    # }
+    # payload = {
+    #     "model": config.get("model", ""),
+    #     "prompt": prompt,
+    #     "max_tokens": 1000,
+    #     "temperature": 0
+    # }
+    # response = requests.post(config["url"], headers=headers, json=payload)
+    # if response.status_code == 200:
+    #     return response.json().get("choices", [{}])[0].get("text", [])
+    # else:
+    #     raise Exception(f"LLM API Error: {response.status_code} - {response.text}")
+
+    return mocked_response
+
 def analyze_code(file_path, language):
     """
-    Analyze code for vulnerabilities based on language
+    Analyze code for vulnerabilities based on language and optionally using LLM.
     """
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
         code = file.read()
-    
+
     vulnerabilities = []
-    
-    # Define analyzers for each language
+
+    # Use language-specific analyzers
     analyzers = {
         'Python': analyze_python,
         'JavaScript': analyze_javascript,
@@ -58,16 +135,129 @@ def analyze_code(file_path, language):
         'Ruby': analyze_ruby,
         'Go': analyze_go
     }
-    
-    # Call the appropriate analyzer for the language
+
     if language in analyzers:
-        vulnerabilities = analyzers[language](code)
-    
+        vulnerabilities.extend(analyzers[language](code))
+
+    # Use LLM-based analysis as an additional step
+    vulnerabilities.extend(analyze_with_llm(code, language))
+
     return {
         'source_code': code,
         'language': language,
         'vulnerabilities': vulnerabilities
     }
+
+def generate_code_fix(code: str, language: str, issues: list) -> str:
+    """
+    Generates a fixed version of the provided code by addressing identified vulnerabilities.
+
+    Parameters:
+    - code (str): The original insecure source code.
+    - language (str): The programming language of the code.
+    - issues (list): A list of identified issues, each containing:
+        - `line`: Line number of the issue.
+        - `vuln_type`: Type of vulnerability (e.g., 'Hardcoded Secret').
+        - `recommendation`: Fix advice.
+
+    Returns:
+    - str: The fixed version of the code.
+    """
+    # Mode selection: Use LLM or Static Rule Mode
+    USE_LLM = True  # Set to False to use Static Rule Mode
+
+    if USE_LLM:
+        # LLM Mode
+        return fix_with_llm(code, language, issues)
+    else:
+        # Static Rule Mode
+        return fix_with_static_rules(code, issues)
+
+
+def fix_with_llm(code: str, language: str, issues: list) -> str:
+    """
+    Uses an LLM to generate a secure version of the code.
+
+    Parameters:
+    - code (str): The original insecure source code.
+    - language (str): The programming language of the code.
+    - issues (list): A list of identified issues.
+
+    Returns:
+    - str: The fixed version of the code.
+    """
+    # LLM API configuration
+    LLM_API_URL = "https://api.openai.com/v1/completions"
+    LLM_API_KEY = "your-openai-api-key-here"
+
+    # Construct the prompt for the LLM
+    issues_description = "\n".join(
+        [f"- Line {issue['line']}: {issue['vuln_type']} - {issue['recommendation']}" for issue in issues]
+    )
+    prompt = f"""
+    The following {language} code contains security vulnerabilities:
+
+    Code:
+    {code}
+
+    Issues:
+    {issues_description}
+
+    Please rewrite the code to fix all the vulnerabilities while maintaining its functionality.
+    """
+
+    # Mocked response for demonstration purposes
+    mocked_fixed_code = "# Fixed code generated by LLM\n" + code.replace("os.system(user_input)", "subprocess.run(user_input, shell=True)")
+
+    # Uncomment the following lines to use the actual LLM API
+    # headers = {
+    #     "Authorization": f"Bearer {LLM_API_KEY}",
+    #     "Content-Type": "application/json"
+    # }
+    # payload = {
+    #     "model": "gpt-4",
+    #     "prompt": prompt,
+    #     "max_tokens": 2000,
+    #     "temperature": 0
+    # }
+    # response = requests.post(LLM_API_URL, headers=headers, json=payload)
+    # if response.status_code == 200:
+    #     return response.json().get("choices", [{}])[0].get("text", "").strip()
+    # else:
+    #     raise Exception(f"LLM API Error: {response.status_code} - {response.text}")
+
+    return mocked_fixed_code
+
+
+def fix_with_static_rules(code: str, issues: list) -> str:
+    """
+    Applies static rules to fix common vulnerabilities in the code.
+
+    Parameters:
+    - code (str): The original insecure source code.
+    - issues (list): A list of identified issues.
+
+    Returns:
+    - str: The fixed version of the code.
+    """
+    lines = code.split("\n")
+    for issue in issues:
+        line_index = issue["line"] - 1
+        if issue["vuln_type"] == "Hardcoded Secret":
+            # Replace hardcoded secrets with environment variables
+            lines[line_index] = re.sub(
+                r'(["\'])(password|secret|key|token|api_key|apikey)\s*=\s*["\'][^"\']+["\']',
+                r'\1\2 = os.getenv("\2")',
+                lines[line_index]
+            )
+        elif issue["vuln_type"] == "Command Injection":
+            # Replace os.system with subprocess.run
+            lines[line_index] = lines[line_index].replace("os.system(", "subprocess.run(")
+        elif issue["vuln_type"] == "SQL Injection":
+            # Add a comment suggesting parameterized queries
+            lines[line_index] += "  # TODO: Use parameterized queries to prevent SQL injection."
+
+    return "\n".join(lines)
 
 # Language-specific analyzers
 def analyze_python(code):
@@ -439,6 +629,95 @@ def analyze_go(code):
     
     return vulnerabilities
 
+def extract_and_list_files(zip_path: str) -> List[str]:
+    """
+    Extracts a zip file to a temporary directory and lists all supported code files.
+
+    Parameters:
+    - zip_path (str): Path to the zip file.
+
+    Returns:
+    - List[str]: List of full paths to supported code files.
+    """
+    temp_dir = tempfile.mkdtemp()
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+
+        supported_files = []
+        for root, dirs, files in os.walk(temp_dir):
+            # Skip unnecessary folders
+            dirs[:] = [d for d in dirs if d not in {'node_modules', '__pycache__', '.git'}]
+            for file in files:
+                if allowed_file(file):
+                    supported_files.append(os.path.join(root, file))
+        return supported_files
+    except Exception as e:
+        shutil.rmtree(temp_dir)
+        raise e
+
+
+def scan_project(zip_path: str, language: str) -> Dict:
+    """
+    Scans a zipped project folder for vulnerabilities.
+
+    Parameters:
+    - zip_path (str): Path to the zip file.
+    - language (str): Programming language of the project.
+
+    Returns:
+    - Dict: Consolidated report of vulnerabilities.
+    """
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Extract files
+        files = extract_and_list_files(zip_path)
+
+        # Analyze each file
+        vulnerabilities_by_file = {}
+        summary = {"high": 0, "medium": 0, "low": 0}
+        for file_path in files:
+            result = analyze_code(file_path, language)
+            vulnerabilities_by_file[file_path] = result["vulnerabilities"]
+
+            # Update summary
+            for vuln in result["vulnerabilities"]:
+                summary[vuln["severity"].lower()] += 1
+
+        return {
+            "summary": summary,
+            "by_file": vulnerabilities_by_file,
+            "files_scanned": len(files)
+        }
+    finally:
+        shutil.rmtree(temp_dir)
+
+
+def clone_and_scan_repo(git_url: str, language: str) -> Dict:
+    """
+    Clones a Git repository, scans it for vulnerabilities, and deletes the cloned folder.
+
+    Parameters:
+    - git_url (str): URL of the Git repository.
+    - language (str): Programming language of the repository.
+
+    Returns:
+    - Dict: Consolidated report of vulnerabilities.
+    """
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Clone the repository
+        subprocess.run(["git", "clone", git_url, temp_dir], check=True)
+
+        # Create a zip file of the cloned repository
+        zip_path = os.path.join(temp_dir, "repo.zip")
+        shutil.make_archive(zip_path.replace(".zip", ""), 'zip', temp_dir)
+
+        # Scan the project
+        return scan_project(zip_path, language)
+    finally:
+        shutil.rmtree(temp_dir)
+
 # API Routes
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -486,6 +765,30 @@ def get_languages():
             {'name': 'Go', 'extension': 'go'}
         ]
     })
+
+@app.route('/api/summary', methods=['GET'])
+def get_summary():
+    """
+    Returns a summary of vulnerabilities detected in the last uploaded file.
+    """
+    latest_file = max(
+        (os.path.join(app.config['UPLOAD_FOLDER'], f) for f in os.listdir(app.config['UPLOAD_FOLDER'])),
+        key=os.path.getctime,
+        default=None
+    )
+    if not latest_file:
+        return jsonify({'error': 'No files analyzed yet'}), 404
+
+    language = identify_language(latest_file)
+    result = analyze_code(latest_file, language)
+    summary = {
+        'language': result['language'],
+        'total_vulnerabilities': len(result['vulnerabilities']),
+        'high': sum(1 for v in result['vulnerabilities'] if v['severity'] == 'high'),
+        'medium': sum(1 for v in result['vulnerabilities'] if v['severity'] == 'medium'),
+        'low': sum(1 for v in result['vulnerabilities'] if v['severity'] == 'low')
+    }
+    return jsonify(summary)
 
 if __name__ == '__main__':
     app.run(debug=True)

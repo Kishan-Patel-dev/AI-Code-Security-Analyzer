@@ -310,6 +310,36 @@ footer {
     border-top: 1px solid var(--border-color);
 }
 
+.download-report-btn {
+    background-color: var(--success);
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.download-report-btn:hover {
+    background-color: var(--primary-dark);
+    color: #fff;
+}
+
+.llm-note {
+    font-size: 0.9rem;
+    color: var(--secondary);
+    margin-top: 0.5rem;
+}
+
+#fix-code {
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+#fix-code:hover {
+    background-color: var(--success);
+    color: #fff;
+}
+
 @media (max-width: 768px) {
     .card-body {
         padding: 1rem;

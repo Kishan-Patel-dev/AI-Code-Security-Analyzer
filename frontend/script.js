@@ -52,6 +52,14 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('theme', 'light');
             codeTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-light.min.css';
         }
+
+        // Update chart colors when theme changes
+        const highCount = parseInt(highCountText.textContent);
+        const mediumCount = parseInt(mediumCountText.textContent);
+        const lowCount = parseInt(lowCountText.textContent);
+        if (highCount > 0 || mediumCount > 0 || lowCount > 0) {
+            createVulnerabilityChart(highCount, mediumCount, lowCount);
+        }
     });
 
     // Check for saved theme preference
@@ -60,7 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
         themeToggle.checked = true;
         document.documentElement.setAttribute('data-theme', 'dark');
         codeTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css';
-    } else if (savedTheme === 'light') {
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
         codeTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-light.min.css';
     }
 

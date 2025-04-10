@@ -1,16 +1,14 @@
 # Secure Code AI
 
-<<<<<<< HEAD
-
-
-![Atl text](asset/Demo.png "AI Code SEcurity Analyzer")
-![Atl text](asset/Result.png "AI Code SEcurity Analyzer")
-=======
 ![Secure Code AI Logo](https://raw.githubusercontent.com/Kishan-Patel-dev/AI-Code-Security-Analyzer/main/assets/logo.png)
 
-![Demo](asset/Demo.png "AI Code Security Analyzer")
-<img src="asset/Result.png" alt="Result Screenshot">
->>>>>>> 321de14 (FEAT: LLM-Powered Vulnerability Detection)
+## Screenshots
+
+### Demo
+![Demo Screenshot](asset/Demo.png)
+
+### Analysis Result
+<img src="asset/Result.png" alt="Analysis Result Screenshot">
 
 Secure Code AI is an advanced AI-powered code security analyzer that helps developers identify and fix security vulnerabilities in their code. The tool provides detailed analysis, recommendations, and visual reporting to improve code security.
 
@@ -119,13 +117,6 @@ secure-code-ai/
 └── uploads/             # Directory for uploaded code files (auto-created)
 ```
 
-## Screenshots
-
-### Demo
-![Demo Screenshot](asset/Demo.png)
-
-### Analysis Result
-<img src="asset/Result.png" alt="Analysis Result Screenshot">
 
 ## Contributing
 
